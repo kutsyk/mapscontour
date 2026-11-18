@@ -51,7 +51,7 @@ export function useLaserExport(bounds:Bounds,enabled:boolean){
       const response=await fetch('/api/laser/jobs/'+id,{signal:task.controller.signal}),job=await response.json();
       if(!response.ok)throw Error(job.error||'Map job not found');setProgress(job.progress);setMessage(job.message);
       if(job.status==='done')return job.result;
-      if(job.status==='error')throw Error(job.message);
+      if(job.status==='error'){setMessage('Map job stopped.');throw Error(job.message)}
       if(job.status==='cancelled')throw new DOMException('Cancelled','AbortError');
       await pause(task.controller.signal);
     }

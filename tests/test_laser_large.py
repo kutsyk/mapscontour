@@ -37,6 +37,19 @@ class LargeLaserTests(unittest.TestCase):
         db=str(self.root/'geo.sqlite');ingest(str(p),db,{})
         result=export(db,str(self.root/'out'),[0,0,.01,.01],self.settings)
         self.assertEqual(result['pathCount'],1)
+    def test_all_supported_layers_survive_disk_export(self):
+        area=self.building(1)['geometry'];line=[{'lon':.001,'lat':.004},{'lon':.008,'lat':.006}]
+        tags=[{'highway':'primary'},{'highway':'residential'},{'building':'yes'},{'natural':'water'},{'waterway':'river'},{'leisure':'park'},{'aeroway':'runway'},{'railway':'rail'}]
+        names=['majorRoads','minorRoads','buildings','water','waterLines','parks','airports','railways']
+        elements=[dict(type='way',id=i+1,tags=t,geometry=area if i in (2,3,5) else line) for i,t in enumerate(tags)]
+        db,_=self.source(elements)
+        self.settings['layers']=[dict(id=name,name=name,enabled=True,operation='cut' if name in ('buildings','water','parks') else 'score',color='#ff0000',stroke=.1) for name in names]
+        result=export(db,str(self.root/'all'),[0,0,.01,.01],self.settings)
+        # Identical full geometry for the same operation is deduplicated intentionally.
+        self.assertEqual(set(result['counts']),set(names))
+        self.assertEqual(len([f for f in result['files'] if f.startswith('layer-')]),8)
+        self.assertTrue(all((self.root/'all'/('layer-'+name+'.svg')).exists() for name in names))
+
     def test_osm_node_locations_and_area_assembly(self):
         import osmium
         p=self.root/'fixture.osm';p.write_text('''<osm version="0.6"><node id="1" lat="0.001" lon="0.001"/><node id="2" lat="0.001" lon="0.003"/><node id="3" lat="0.003" lon="0.003"/><way id="20"><nd ref="1"/><nd ref="2"/><nd ref="3"/><nd ref="1"/><tag k="building" v="yes"/></way></osm>''')
