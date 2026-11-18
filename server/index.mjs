@@ -1,4 +1,5 @@
 import express from 'express';
+import {registerLaserRoutes} from './laser.mjs';
 import multer from 'multer';
 import {spawn} from 'node:child_process';
 import {mkdir,readFile,writeFile,unlink} from 'node:fs/promises';
@@ -15,6 +16,7 @@ app.use((req,res,next)=>{
   if(req.headers.origin&&!['http://127.0.0.1:5173','http://localhost:5173','http://127.0.0.1:4311'].includes(req.headers.origin))return res.status(403).json({error:'Local access only'});
   next();
 });
+registerLaserRoutes(app,root);
 app.use(express.json({limit:'100kb'}));
 const upload=multer({dest:root+'/imports',limits:{fileSize:2*1024**3,files:1}});
 const sample={id:'sample',name:'Workshop mountain · synthetic',bounds:[-122,46.78,-121.65,47.02],resolution:90,limitations:'Generated demonstration terrain, not a real survey. Nominal 90 m sampling. No external elevation provider.',attribution:'MapsContour synthetic terrain · freely reusable'};

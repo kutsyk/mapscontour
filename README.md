@@ -34,6 +34,28 @@ All providers now sample a local WGS84 transverse-Mercator grid centred on the s
 
 Relief is vertical exaggeration relative to horizontal map scale: `height_mm = (elevation_m - selected_min_m) × model_width_mm / ground_width_m × relief`. A 2× setting doubles relief but leaves the footprint unchanged. A solid base is added below the selected minimum. Stock fit excludes machining allowance. Preview elevation extrema and stock fit are approximate because the preview uses a 90 × 90 grid; the settings file records the actual final extrema and total thickness. Finer output does not create additional source detail.
 
+## Laser map SVG (second feature)
+
+Choose the **Laser map SVG** tab in the header. It shares the current map rectangle and uses **Area → Layers → Export**. No DEM upload or elevation fetch is required. Terrain settings remain independent and available in the first tab.
+
+1. Frame a local area with the existing center/edge/corner controls, exact bounds or place search.
+2. Choose physical width (millimetres or inches), margin, included layers, colors, stroke widths in millimetres, and cut/score/engrave grouping. Length follows the map proportions. Optional subtype colors override the major/minor road color. An outer cut frame is optional.
+3. Generate from OpenStreetMap, inspect the exact SVG preview, then download `map.svg` and `settings-credits.json`. **Try a synthetic demo** exercises export without an online map-data request. The preview has zoom and reset controls.
+
+Layers retained from the original map-exporter: major roads, minor roads, buildings, water areas, optional river/stream/canal centerlines, parks/grass, airport infrastructure and railways. SVGs have physical `mm` dimensions and viewBox coordinates in millimetres. Engrave fills closed areas; open features remain centerlines. Named groups, colors and `data-operation` metadata describe intent; configure power/speed and operation interpretation in your laser editor. There is no automatic G-code or machine control.
+
+Geometry is clipped to the actual rectangle, not just hidden by an SVG clipPath. Fragmented/reversed relation members are joined before polygon assembly; inner holes are preserved. Incomplete areas/relations are skipped with counts. Relation-member duplicates and exact/reversed duplicate line paths for the same operation are suppressed. Partial overlapping lines and self-supporting cutout geometry still need manufacturing review.
+
+**Limits:** roads are centerlines, not buffered connected road cutouts. There is no kerf compensation, island/bridge analysis, tab generation, minimum feature-size validation or laser sheet tiling yet. The laser exporter uses uniformly scaled Web Mercator to preserve drawing proportions; ground scale is approximate for these small areas. It is not guaranteed to align exactly to the terrain feature's local metric projection. Review the output in your laser editor before fabrication.
+
+Online OSM features are requested only when Generate is pressed, through the local API to **https://overpass-api.de/api/interpreter**. The selected rectangle and requested layer filters leave this computer; imported DEMs and STL files do not. The public endpoint is best-effort shared infrastructure, with bounded retry and cancellation. Query limits: at most 400 km², 40 km per side, 32 MiB response, 50,000 elements and 500,000 geometry points. Reduce the selection/layers when a limit is exceeded. Overpass errors/partial results are not treated as successful empty exports.
+
+Query results are cached for 24 hours under `data/cache/laser/`, keyed by exact query/bounds/layers, independently of output dimensions and colors. Exports are saved in `data/laser/<id>/`; downloads remain available from disk after restart. Settings are stored independently in browser localStorage. Changed area/style/size marks existing previews and downloads stale until regenerated. Cancellation aborts fetching or terminates SVG worker processing. A local save already in progress may finish even if the browser request is cancelled.
+
+Credits include OSM attribution, ODbL link, requested bounds, physical dimensions, layer/operation settings, available OSM base timestamp, fetch time, counts and geometry warnings. Attribution is embedded in SVG metadata/description and saved as a sidecar; provide the appropriate visible credit on distributed products as required by [OSM attribution guidance](https://www.openstreetmap.org/copyright). The synthetic demo is clearly labeled and is not attributed to OSM.
+
+The original sibling `map-exporter` folder was inspected but not modified. See [the implementation review and prioritized feature roadmap](docs/map-exporter-review.md) for concrete original-code findings, fixes delivered here, and proposed manufacturing improvements.
+
 ## 3D preview
 
 The preview uses light matte wood for the relief and darker wood for walls/base, with neutral diffuse lighting and no dynamic shadows. Drag to orbit, scroll/pinch to zoom, and use Reset view or Top view to fit the model. Camera motion never rebuilds geometry. Rendering is on demand and stops after orbit damping settles; pixel density is capped at 1.5× for tablet/GPU responsiveness.
